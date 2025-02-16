@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多人调解聊天室</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .chat-box {
+      height: 300px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: scroll;
+      margin-bottom: 10px;
+      background-color: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 10px;
+    }
+    .message.user {
+      color: #007bff;
+    }
+    .message.model {
+      color: #28a745;
+    }
+    .thinking {
+      color: #888;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>多人调解聊天室</h1>
+    <div id="login">
+      <input id="username" placeholder="输入你的昵称">
+      <input id="roomCode" placeholder="输入房间号">
+      <button id="joinRoom">加入房间</button>
+    </div>
+    <div id="chatRoom" style="display: none;">
+      <div class="chat-box" id="chat"></div>
+      <input id="messageInput" placeholder="输入你的观点">
+      <button id="sendMessage">发送</button>
+      <button id="leaveRoom">退出房间</button>
+      <h3>当前用户</h3>
+      <ul id="userList"></ul>
+    </div>
+  </div>
+  <script>
+    const chatBox = document.getElementById('chat');
+    const messageInput = document.getElementById('messageInput');
+    const roomCodeInput = document.getElementById('roomCode');
+    const usernameInput = document.getElementById('username');
+    const joinRoomButton = document.getElementById('joinRoom');
+    const sendMessageButton = document.getElementById('sendMessage');
+    const leaveRoomButton = document.getElementById('leaveRoom');
+    const loginDiv = document.getElementById('login');
+    const chatRoomDiv = document.getElementById('chatRoom');
+    const userList = document.getElementById('userList');
+
+    let roomCode = '';
+    let username = '';
+
+    // 加入房间
+    joinRoomButton.addEventListener('click', async () => {
+      roomCode = roomCodeInput.value;
+      username = usernameInput.value;
+      if (!roomCode || !username) {
+        alert('请输入房间号和昵称');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:3000/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode, username }),
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          loginDiv.style.display = 'none';
+          chatRoomDiv.style.display = 'block';
+
+          // 显示历史记录
+          data.history.forEach(msg => appendMessage(msg.sender, msg.text));
+
+          // 更新用户列表
+          updateUserList(data.users);
+        } else {
+          alert(data.message || '加入房间失败');
+        }
+      } catch (error) {
+        console.error('请求失败:', error);
+        alert('网络错误，请稍后重试');
+      }
+    });
+
+    // 发送消息
+    sendMessageButton.addEventListener('click', async () => {
+      const message = messageInput.value;
+      if (!message) {
+        alert('请输入消息');
+        return;
+      }
+
+      // 禁用发送按钮和输入框
+      sendMessageButton.disabled = true;
+      messageInput.disabled = true;
+
+      // 显示“正在思考”的提示
+      const thinkingMessage = appendMessage('调解员', '正在思考...', true);
+
+      try {
+        // 发送消息到后端
+        const response = await fetch('http://localhost:3000/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode, username, message }),
+        });
+        const data = await response.json();
+
+        // 移除“正在思考”的提示
+        chatBox.removeChild(thinkingMessage);
+
+        // 显示调解员的回复
+        if (data.reply) {
+          appendMessage('调解员', data.reply);
+        }
+      } catch (error) {
+        console.error('请求失败:', error);
+        alert('网络错误，请稍后重试');
+      } finally {
+        // 重新启用发送按钮和输入框
+        sendMessageButton.disabled = false;
+        messageInput.disabled = false;
+      }
+    });
+
+    // 监听输入框的回车键
+    messageInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // 阻止默认行为（如换行）
+        sendMessageButton.click(); // 触发发送按钮的点击事件
+      }
+    });
+
+    // 退出房间
+    leaveRoomButton.addEventListener('click', async () => {
+      try {
+        const response = await fetch('http://localhost:3000/leave', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode, username }),
+        });
+        if (response.ok) {
+          alert('你已退出房间');
+          location.reload();
+        }
+      } catch (error) {
+        console.error('请求失败:', error);
+        alert('网络错误，请稍后重试');
+      }
+    });
+
+    // 显示消息
+    function appendMessage(sender, text, isThinking = false) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message');
+      messageElement.classList.add(sender === username ? 'user' : 'model');
+      if (isThinking) {
+        messageElement.classList.add('thinking');
+      }
+      messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      chatBox.appendChild(messageElement);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return messageElement; // 返回消息元素，方便后续操作
+    }
+
+    // 更新用户列表
+    function updateUserList(users) {
+      userList.innerHTML = '';
+      users.forEach(user => {
+        const userElement = document.createElement('li');
+        userElement.textContent = user;
+        userList.appendChild(userElement);
+      });
+    }
+  </script>
+</body>
+</html>

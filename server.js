@@ -57,7 +57,7 @@ app.post('/send', async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.sk-jdjxvdqaxekuseopncjkiuercaptcgttojuvszbjlbqtqbum}`, // 从环境变量读取密钥
+        'Authorization': `Bearer ${process.env.SILICONFLOW_API_KEY}`, // 从环境变量读取密钥
       },
       body: JSON.stringify({
         model: 'siliconflow-model',

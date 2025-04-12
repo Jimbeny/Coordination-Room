@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
+require('dotenv').config(); // 安装 dotenv: npm install dotenv
 
 // 启用 CORS 和 JSON 解析
 app.use(cors());
@@ -39,7 +40,7 @@ app.post('/join', (req, res) => {
 app.post('/send', async (req, res) => {
   const { roomCode, username, message } = req.body;
   if (!roomCode || !username || !message) {
-    return res.status(400).json({ success: false, message: '房间号、昵称和消息不能为空' });
+    return res.status(400).json({ success: false, message: '参数缺失' });
   }
 
   const room = rooms[roomCode];
@@ -50,28 +51,33 @@ app.post('/send', async (req, res) => {
   // 保存用户消息
   room.messages.push({ sender: username, text: message });
 
-  // 调用 Ollama API 生成回复
+  // 调用硅基流动 API
   try {
-    const response = await fetch('http://localhost:11434/api/generate', {
+    const response = await fetch('https://api.siliconflow.com/v1/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.sk-jdjxvdqaxekuseopncjkiuercaptcgttojuvszbjlbqtqbum}`, // 从环境变量读取密钥
       },
       body: JSON.stringify({
-        model: 'deepseek-r1:1.5b', // 替换为你的模型名称
-        prompt: `你是一个调解员，帮助用户解决纠纷。用户说：“${message}”`, // 提示词
-        stream: false, // 关闭流式响应
+        model: 'siliconflow-model',
+        messages: [
+          { role: 'system', content: '你是一个调解员，帮助用户解决纠纷。' },
+          { role: 'user', content: message },
+        ],
       }),
     });
-    const data = await response.json();
 
-    // 获取 Ollama 的回复
-    const reply = data.response; // Ollama 的回复字段是 response
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'API 调用失败');
+
+    // 提取回复内容
+    const reply = data.choices[0].message.content;
     room.messages.push({ sender: '调解员', text: reply });
 
     res.json({ success: true, reply });
   } catch (error) {
-    console.error('调用 Ollama API 失败:', error);
+    console.error('硅基流动 API 错误:', error);
     res.status(500).json({ success: false, message: '调解员暂时无法回复' });
   }
 });

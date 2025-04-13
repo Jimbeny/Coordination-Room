@@ -78,12 +78,22 @@ async function getUserAccountInfo() {
       }
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error?.message || '获取用户信息失败');
-    }
+    // 记录响应内容和状态码
+    console.log('响应状态码:', response.status);
+    const responseText = await response.text();
+    console.log('响应内容:', responseText);
 
-    return await response.json();
+    try {
+      if (!response.ok) {
+        const error = JSON.parse(responseText);
+        throw new Error(error?.message || '获取用户信息失败');
+      }
+
+      return JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('解析响应数据时出错:', parseError);
+      throw new Error('无法解析响应数据，请检查接口返回格式');
+    }
   } catch (error) {
     console.error('用户信息接口错误:', error.message);
     throw error;

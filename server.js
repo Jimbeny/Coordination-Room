@@ -14,8 +14,8 @@ const rooms = {};
 
 // ---------- 硅基流动 API 配置 ----------
 const SILICONFLOW_CONFIG = {
-  baseUrl: "https://api.siliconflow.cn/v1",
-  model: "deepseek-ai/DeepSeek-V2.5",
+  baseUrl: "https://api.siliconflow.cn",
+  model: "deepseek-ai/DeepSeek-V3",
   systemPrompt: "你是一个专业调解员，需用简洁中文回复"
 };
 
@@ -71,7 +71,8 @@ async function callSiliconFlowAPI(userMessage) {
 // ---------- 新增：获取用户账户信息 ----------
 async function getUserAccountInfo() {
   try {
-    const response = await fetch(`${SILICONFLOW_CONFIG.baseUrl}/userinfo`, {
+    // 请根据实际情况修改接口地址
+const response = await fetch(`${SILICONFLOW_CONFIG.baseUrl}/users/me`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${process.env.SILICONFLOW_API_KEY}`,
@@ -85,14 +86,19 @@ async function getUserAccountInfo() {
 
     try {
       if (!response.ok) {
-        const error = JSON.parse(responseText);
-        throw new Error(error?.message || '获取用户信息失败');
+      const errorData = responseText.startsWith('{') ? JSON.parse(responseText) : { message: response.statusText };
+      throw new Error(`用户信息接口异常: ${response.status} ${errorData.message || '未知错误'}`);
+        throw new Error(`用户信息接口异常: ${response.status} ${response.statusText}`);
       }
-
-      return JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('解析响应数据时出错:', parseError);
-      throw new Error('无法解析响应数据，请检查接口返回格式');
+      try {
+        return JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('解析响应数据时出错:', parseError);
+        throw new Error('无法解析响应数据，请检查接口返回格式');
+      }
+    } catch (error) {
+      console.error('用户信息接口错误:', error.message);
+      throw error;
     }
   } catch (error) {
     console.error('用户信息接口错误:', error.message);
@@ -104,6 +110,10 @@ async function getUserAccountInfo() {
 
 // [1] 加入房间（添加用户余额检查）
 app.post('/join', async (req, res) => {
+    console.log('开始执行 /join 接口逻辑');
+    console.log('尝试获取用户账户信息');
+
+    console.log('开始处理 /join 请求:', req.body);
   try {
     const { roomCode, username } = req.body;
 
@@ -160,6 +170,10 @@ app.post('/join', async (req, res) => {
 
 // [2] 发送消息（优化错误处理）
 app.post('/send', async (req, res) => {
+    console.log('开始执行 /send 接口逻辑');
+    console.log('尝试获取用户账户信息');
+
+    console.log('开始处理 /send 请求:', req.body);
   try {
     const { roomCode, username, message } = req.body;
 

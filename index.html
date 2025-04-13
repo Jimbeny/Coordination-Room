@@ -99,8 +99,17 @@
 
     // 加入房间
     joinRoomButton.addEventListener('click', async () => {
-      roomCode = roomCodeInput.value;
-      username = usernameInput.value;
+      roomCode = roomCodeInput.value.trim();
+      username = usernameInput.value.trim();
+      
+      if (!username || username.length > 20) {
+        alert('昵称不能为空且不超过20个字符');
+        return;
+      }
+      if (!roomCode || !/^\d{1,10}$/.test(roomCode)) {
+        alert('房间号必须为1-10位数字');
+        return;
+      }
       if (!roomCode || !username) {
         alert('请输入房间号和昵称');
         return;
@@ -136,7 +145,8 @@
     sendMessageButton.addEventListener('click', async () => {
       const message = messageInput.value;
       if (!message) {
-        alert('请输入消息');
+        alert('消息内容不能为空且不超过500字');
+      return;
         return;
       }
 
@@ -207,7 +217,18 @@
       if (isThinking) {
         messageElement.classList.add('thinking');
       }
-      messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      const timestamp = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  if(isSystem) {
+    messageElement.innerHTML = `<span class="message-system">${text} • ${timestamp}</span>`;
+  } else {
+    messageElement.innerHTML = `
+      <div class="message ${sender === '调解员' ? 'mediator' : 'user'}">
+        <strong>${sender}</strong>
+        <span class="message-time">${timestamp}</span>
+        <div>${text}</div>
+      </div>
+    `;
+  }
       chatBox.appendChild(messageElement);
       chatBox.scrollTop = chatBox.scrollHeight;
       return messageElement; // 返回消息元素，方便后续操作

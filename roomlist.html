@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的房间</title>
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .room-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .room-card:hover {
+      transform: translateY(-2px);
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .action-buttons {
+      margin-top: 30px;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+    .action-btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .create-btn {
+      background: #4CAF50;
+      color: white;
+    }
+    .join-btn {
+      background: #2196F3;
+      color: white;
+    }
+    .logout-btn {
+      background: #ff5722;
+      color: white;
+    }
+    /* 添加以下样式让 h2 居中 */
+    h2 {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="welcomeTitle">欢迎<span id="usernamePlaceholder"></span>来到“大聪明”的世界</h2>
+    <div class="room-grid" id="roomGrid">
+      <!-- 动态生成房间卡片 -->
+    </div>
+    <div class="pagination" id="pagination">
+      <!-- 动态生成分页 -->
+    </div>
+    <div class="action-buttons">
+      <button class="action-btn create-btn" onclick="location.href=`newroom.html?accountID=${accountID}`">创建房间</button>
+      <button class="action-btn join-btn" onclick="location.href=`joinroom.html?accountID=${accountID}`">加入房间</button>
+      <button class="action-btn logout-btn" onclick="location.href='login.html'">注销账号</button>
+    </div>
+  </div>
+
+  <script>
+    // 初始化获取URL参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const accountID = urlParams.get('accountID');
+    // 初始化加载房间数据
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!accountID) {
+        alert('请先登录');
+        window.location.href = 'login.html';
+        return;
+      }      
+      
+      try {
+        const response = await fetch(`http://localhost:3001/account/rooms?accountID=${accountID}`);
+        const data = await response.json();
+        if (data.success) {
+          // 标题插入用户名
+          document.getElementById('usernamePlaceholder').textContent = data.accountName;
+          // 渲染房间列表
+          renderRooms(data.joinedRooms);  //joinedRooms: [{ roomCode, roomName, roleName, password, lastAccessed }]
+        }
+      } catch (error) {
+        console.error('加载房间失败:', error);
+      }
+    });
+
+    /**
+     * 渲染房间列表
+     * @param {Array} rooms - 房间数据数组 
+     */
+    //joinedRooms: [{ roomCode, roomName, roleName, password, lastAccessed }]
+    function renderRooms(joinedRooms) {
+      const grid = document.getElementById('roomGrid');    // 获取房间卡片容器
+      grid.innerHTML = joinedRooms.map(roomEnter => 
+        `<div class="room-card" onclick="enterRoom('${roomEnter.roomCode}','${roomEnter.roleName}','${roomEnter.password}')">
+          <p>房间编号：${roomEnter.roomCode}</p>
+          <p>房间名称：${roomEnter.roomName}</p>
+          <p>角色昵称：${roomEnter.roleName}</p>
+        </div>`
+      ).join('');
+    }
+
+    /**
+     * 进入指定房间
+     * @param {Object} roomEnter - 包含房间信息的对象
+     */
+    async function enterRoom(roomCode, roleName, password) {
+      try {
+        const response = await fetch('http://localhost:3001/join', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            roomCode,
+            roleName,
+            password,
+            accountID: accountID
+          })
+        });
+        const data = await response.json();
+        if (data.success) {
+          window.location.href = `chatwindow.html?roomCode=${roomCode}&accountID=${accountID}`;  // 携带完整房间参数跳转
+        }
+      }
+      catch (error) {
+        console.error('进入房间失败:', error);
+        alert('网络连接异常');
+      }
+    }
+  </script>
+</body>
+</html>

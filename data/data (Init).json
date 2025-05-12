@@ -1,0 +1,13 @@
+{
+  "accounts": [
+    {
+      "id": "12345678",
+      "accountname": "测试账户",
+      "email": "111",
+      "password": "111",
+      "createdAt": "2025-05-12T05:27:02.432Z",
+      "joinedRooms": []
+    }
+  ],
+  "rooms": {}
+}

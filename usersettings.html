@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户设置</title>
+  <style>
+    /* 迁移原index.html的模态框样式 */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+    .container {
+      max-width: 500px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 15px;
+      margin-top: 25px;
+    }
+    @media (max-width: 480px) {
+      .modal-actions {
+        flex-direction: column;
+      }
+    }
+    .modal-button {
+      flex: 1;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+    .modal-button:hover {
+      opacity: 0.9;
+    }
+    #returnButton {
+      background: #f44336;
+    }
+    .form-input,
+    .form-textarea,
+    .form-select {
+      border-color: #ddd;
+    }
+    @media (max-width: 480px) {
+      .form-input,
+      .form-textarea,
+      .form-select {
+        padding: 12px 10px;
+        font-size: 14px;
+      }
+    }
+    /* 保留原有模态框样式 */
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h3>用户设置</h3>
+    <!-- 迁移原有表单结构 -->
+    <div class="form-group">
+      <label>修改昵称：</label>
+      <!-- 将 newUsername 改为 newRolename -->
+      <input id="newRolename" class="form-input" placeholder="请输入新昵称">
+    </div>
+    <div class="form-group">
+      <label>自我介绍：</label>
+      <textarea id="selfIntroduction" class="form-input" placeholder="请让我更多地了解你" rows="4"></textarea>
+    </div>
+    <div class="form-group">
+      <label>选择用户：</label>
+      <select id="userSelect" class="form-select">
+        <option value="">-- 请选择用户 --</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>用户关系描述：</label>
+      <textarea id="relationshipDesc" class="form-textarea" placeholder="尽可能多地介绍TA的关系，以及对TA的看法"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-button" id="saveSettings">保存设置</button>
+      <button class="modal-button" id="returnButton">返回聊天室</button>
+    </div>
+  </div>
+  <script>
+    // 初始化获取URL参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('roomCode');
+    const accountID = urlParams.get('accountID');
+    const saveSettingsBtn = document.getElementById('saveSettings');
+    const closeSettingsBtn = document.getElementById('closeSettings');
+    const userSelect = document.getElementById('userSelect');
+    
+    let currentsettings = {};    
+    let setchanged = false;
+    let mymemberinfo = {};
+    let memberList = [];
+    
+    // 新增立即执行异步函数包裹初始化逻辑
+    async function initSettings() {
+      try {
+        const response = await fetch('http://localhost:3001/room-info', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                roomCode: roomCode,
+                accountID: accountID
+            })
+        });
+  
+        const data = await response.json();
+        if(data.success) {
+          const roomName = data.roomName;
+          const password = data.password;
+          // members: { roleID, roleName, roleID, roleName, selfIntroduction, description, online, joinTime, lastChecked }
+          mymemberinfo = data.mymemberinfo;
+          // memberList: { roleID, roleName, online, joinTime, lastChecked }
+          memberList = data.memberList;
+
+          if(mymemberinfo?.roleName) {
+              document.getElementById('newRolename').value = mymemberinfo.roleName;
+          }
+          if(mymemberinfo?.selfIntroduction) {
+              document.getElementById('selfIntroduction').value = mymemberinfo.selfIntroduction;
+          }
+          // 初始化用户选择列表（修改后）
+          userSelect.innerHTML = '<option value="">-- 请选择用户 --</option>';
+          document.getElementById('relationshipDesc').value = '';
+          
+          // 过滤当前用户并整理有效用户数据
+          const otherMembers = memberList.filter(u => 
+            u.roleID && u.roleName !== mymemberinfo.roleName
+          );
+
+          // 遍历其他用户，初始化选项
+          otherMembers.forEach(member => {
+            // 查找当前用户与该成员的关系描述（避免重复添加）
+            const existingDesc = mymemberinfo.description.find(d => d.tagID === member.roleID);
+            if (!existingDesc) {
+              mymemberinfo.description.push({
+                tagID: member.roleID,
+                tagName: member.roleName,  // 确保 tagName 使用成员昵称
+                relationshipDesc: ''
+              });
+            }
+          });
+
+          // 创建选项（恢复 textContent 并优化重复检查）
+          mymemberinfo.description.forEach(desc => {
+            // 检查是否已存在该用户选项（基于 tagID 而非 tagName，避免昵称修改导致的重复）
+            const optionExists = Array.from(userSelect.options).some(opt => 
+              opt.getAttribute('data-tagid') === desc.tagID
+            );
+
+            if (!optionExists) {
+              const option = document.createElement('option');
+              option.value = desc.tagName;  // 选项值使用昵称
+              option.textContent = desc.tagName;  // 显示文本使用昵称（关键修复）
+              option.setAttribute('data-tagid', desc.tagID);  // 新增：存储唯一标识避免重复
+              option.setAttribute('data-relationship-desc', desc.relationshipDesc || '');
+              userSelect.appendChild(option);
+            }
+          });
+          // 启用控件
+          saveSettingsBtn.disabled = false;
+          userSelect.disabled = false;
+        } else {
+          alert(data.message);
+        }
+      } catch(error) {
+        console.error('获取房间信息失败:', error);
+        appendMessage('系统', '无法获取房间信息，请检查网络连接');
+      }
+    };
+    initSettings();
+    // 监听输入框输入变化（修改后）
+    const inputHandlers = {};
+    ['newRolename', 'selfIntroduction', 'relationshipDesc'].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.removeEventListener('input', inputHandlers[id]);
+      }
+      // 定义具名处理函数（新增relationshipDesc同步逻辑）
+      const handler = () => {
+        setchanged = true;
+        // 仅当当前输入框是relationshipDesc时，同步到选中option的data属性
+        if (id === 'relationshipDesc') {
+          const selectedOption = userSelect.options[userSelect.selectedIndex];
+          if (selectedOption && selectedOption.value !== '') { // 排除默认选项
+            selectedOption.setAttribute('data-relationship-desc', element.value);
+          }
+        }
+      };
+      inputHandlers[id] = handler;
+      // 添加新监听器
+      document.getElementById(id).addEventListener('input', handler);
+    });
+    
+    userSelect.addEventListener('change', (e) => {
+      const selectedOption = e.target.options[e.target.selectedIndex];
+      // 从自定义属性中获取关系描述信息并显示在文本框中
+      document.getElementById('relationshipDesc').value = selectedOption.getAttribute('data-relationship-desc') || ''; 
+    });
+
+
+    // 迁移原有设置保存逻辑（修改后）
+    document.getElementById('saveSettings').addEventListener('click', async () => {
+      saveSettingsmodel(userSelect); // 不再传递setchanged参数
+    });
+    
+    // 返回按钮功能（修改后）
+    document.getElementById('returnButton').addEventListener('click', async () => {  // 改为 async 函数
+      if (setchanged) {
+          if (confirm('是否保存当前设置？')) {
+              await saveSettingsmodel(userSelect);  // 等待保存操作完成
+          } else {
+              setchanged = false;
+          }
+      }
+      window.location.href = `chatwindow.html?roomCode=${roomCode}&accountID=${accountID}`;
+    });
+
+    // 保存逻辑函数（修改后）
+    async function saveSettingsmodel(userSelect) { // 移除setchanged参数
+      if (setchanged) { // 直接使用外部的setchanged变量
+        try {
+          const newRoleName = document.getElementById('newRolename').value;
+          if (newRoleName !== mymemberinfo.roleName) {
+            const isExist = memberList.some(member => member.roleName === newRoleName);
+            if (isExist) {
+              alert('角色名已存在，请重新输入！');
+              document.getElementById('newRolename').value = '';
+              return;
+            }
+          }
+
+          const newmemberinfo = { ...mymemberinfo }; // 使用展开运算符创建副本，避免直接修改原对象
+          newmemberinfo.roleName = newRoleName;
+          newmemberinfo.selfIntroduction = document.getElementById('selfIntroduction').value;
+          newmemberinfo.description = Array.from(userSelect.options).slice(1).map(opt => ({
+            tagName: opt.value,
+            tagID: memberList.find(member => member.roleName === opt.value).roleID,
+            relationshipDesc: opt.getAttribute('data-relationship-desc')
+          }));
+
+          const response = await fetch('http://localhost:3001/update-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomCode, newmemberinfo }),
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            alert('保存成功！');
+            setchanged = false; // 仅在保存成功时置为false
+          }
+        } catch (error) {
+          console.error('保存失败:', error);
+          alert(`保存失败: ${error.message}`);
+        }
+      }
+    }
+  </script>
+<!-- 修改为CDN路径 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+</body>
+</html>

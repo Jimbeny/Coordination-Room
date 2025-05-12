@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创建房间</title>
+  <style>
+    .container {
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 30px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .room-code {
+      font-size: 24px;
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>创建新房间</h2>
+    <form id="createForm" onsubmit="return handleCreate(event)">
+      <div class="form-group">
+        <label>在房间内怎么称呼您？</label>
+        <input type="text" id="roleName" required>
+      </div>
+      <div class="form-group">
+        <label>给房间取一个名字</label>
+        <input type="text" id="roomName" required>
+    </div>
+    <div class="form-group">
+      <label>进入口令（6位）</label>
+      <input type="text" id="password" required>
+      </div>
+      <div class="form-group">
+        <label>内容提示词</label>
+        <textarea id="prompt" rows="4" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>模式</label>
+        <div class="mode-options">
+          <label><input type="radio" name="mode" value="1" required> 成员毫无交互，"大聪明"奔走斡旋</label>
+          <label><input type="radio" name="mode" value="2"> 成员不善言辞，"大聪明"调解气氛</label>
+          <label><input type="radio" name="mode" value="3"> 成员交互热烈，"大聪明"总结两句</label>
+        </div>
+      </div>
+      <div class="button-group">
+        <button type="submit" class="primary-btn">立即创建</button>
+        <button type="button" class="cancel-btn" onclick="location.href=`roomlist.html?accountID=${accountID}`">取消</button>
+      </div>
+    </form>
+  </div>
+
+  <style>
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    .primary-btn {
+      background: #4CAF50;
+      flex: 1;
+    }
+    .cancel-btn {
+      background: #f44336;
+      flex: 1;
+    }
+    @media (max-width: 480px) {
+      .button-group {
+        flex-direction: column;
+      }
+    }
+    .mode-options {
+      display: inline-flex;
+      flex-direction: row;
+      gap: 16px;
+      padding: 0 0;
+    }
+    .mode-options label {
+      display: block;
+      align-items: center;
+      gap: 4px;
+      padding: 1px;
+      background: #f8f9fa;
+      border-radius: 5px;
+      font-size: 10px;
+    }
+  </style>
+  <script>
+    const MEDIATOR_INSTRUCTION = `现在我们在一个聊天室里，我是没有感情的中立admin，此外还有一些用户。`+
+    `聊天室的规则是,用户与你聊天全部由我转达，这包括用户的消息与你的reply，每个用户的聊天不会被其他用户看到。`+
+    `因此我们约定，我以“用户名：消息”的形式转达（如“小红：1+1=？”），以便你知道是哪个用户给你的message。`+
+    `你的reply以“@用户名：消息”的形式给我（如“@小红：1+1=2”），以便我知道是给哪个用户的reply并转发给他。`+
+    `如果我和你说话，以“admin：消息”的形式，你给我的reply我不会转达给用户。请你愉快地与用户们聊天，并且让他们彼此感情增进。`;
+    document.getElementById('prompt').value = MEDIATOR_INSTRUCTION;
+    // 初始化获取URL参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const accountID = urlParams.get('accountID');
+    /**
+     * 处理创建房间的逻辑
+     * @param {Event} e - 表单提交事件
+     */
+    async function handleCreate(e) {
+      e.preventDefault();
+      const roleName = document.getElementById('roleName').value;   // 输入房间内角色名
+      const roomName = document.getElementById('roomName').value;   // 输入房间名
+      const password = document.getElementById('password').value;
+      const prompt = document.getElementById('prompt').value;
+      
+      try {
+        const response = await fetch('http://localhost:3001/create-room', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            accountID: accountID,  // 传递账号ID 
+            roleName: roleName, // 传递房间昵称
+            roomName: roomName,
+            password: password,
+            prompt: prompt,
+            mode: document.querySelector('input[name="mode"]:checked').value    
+          })
+        });
+
+        const data = await response.json();
+        /*data = { success, message, roomCode, accountID*/
+        if(data.success) {
+          window.location.href = `chatwindow.html?roomCode=${data.roomCode}&accountID=${accountID}`;  // 携带完整房间参数跳转
+        } else {
+          alert(data.message); // 自动显示服务器返回的错误信息
+        }
+      } catch(error) {
+        console.error('创建失败:', error);
+        alert('网络连接异常');
+      }
+    }
+  </script>
+</body>
+</html>

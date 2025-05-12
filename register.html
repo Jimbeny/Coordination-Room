@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户注册</title>
+  <style>
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .error {
+      color: #dc3545;
+      font-size: 0.9em;
+    }
+    /* 新增样式，为按钮添加底部外边距 */
+    .spaced-button {
+      margin-bottom: 15px;
+    }
+    /* 新增样式，将按钮背景颜色设置为浅灰色 */
+    .back-button {
+      background: #f0f0f0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>新用户注册</h2>
+    <div class="input-group">
+      <input type="text" id="accountname" placeholder="用户名">
+      <input type="email" id="email" placeholder="邮箱地址">
+      <input type="password" id="password" placeholder="密码">
+      <input type="password" id="confirmPassword" placeholder="确认密码">
+    </div>
+    <div id="errorMsg" class="error"></div>
+    <!-- 为立即注册按钮添加类名 -->
+    <button class="spaced-button" onclick="handleRegister()">立即注册</button>
+    <!-- 新增返回按钮，并添加类名 -->
+    <button class="back-button" onclick="window.location.href = 'login.html'">返回登录</button>
+  </div>
+  <script>
+    /**
+     * 处理用户注册逻辑
+     * 1. 检查两次输入的密码是否一致
+     * 2. 发送注册请求到服务器
+     * 3. 根据服务器响应处理结果
+     */
+    async function handleRegister() {
+      const accountname = document.getElementById('accountname').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (password !== confirmPassword) {
+        document.getElementById('errorMsg').textContent = '两次输入的密码不一致';
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:3001/register', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ accountname, email, password })
+        });
+
+        const data = await response.json();
+        if(data.success) {
+          alert('注册成功，请登录');
+          window.location.href = 'login.html';
+        } else {
+          document.getElementById('errorMsg').textContent = data.message;
+        }
+      } catch(error) {
+        console.error('注册错误:', error);
+        document.getElementById('errorMsg').textContent = '网络连接异常';
+      }
+    }
+  </script>
+</body>
+</html>

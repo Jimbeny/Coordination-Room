@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>没有“大聪明”解决不了的问题</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    
+    .chat-box {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: scroll;
+      margin-bottom: 10px;
+      background-color: #f9f9f9;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    #sendMessage {
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .message {
+      margin-bottom: 10px;
+    }
+    .message.user {
+      color: #007bff;
+    }
+    .message.model {
+      color: #28a745;
+    }
+    .thinking {
+      color: #888;
+      font-style: italic;
+    }
+  </style>
+
+<style>
+.message {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+
+
+.timestamp {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.thinking .timestamp {
+  color: #aaa;
+}
+
+.message-body {
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.message.right-message .content {
+  background-color: #007bff !important;
+  color: white;
+  border-radius: 15px 15px 0 15px;
+  max-width: 80%;
+  padding: 8px 12px;
+}
+
+.message:not(.right-message) .content {
+  background-color: #e9ecef;
+  color: black;
+  border-radius: 15px 15px 15px 0;
+}
+
+.message.right-message {
+  justify-content: flex-end;
+}
+
+.message.right-message .content {
+  background-color: #007bff !important;
+  color: white;
+  border-radius: 15px 15px 0 15px;
+  max-width: 80%;
+  padding: 8px 12px;
+}
+
+.message:not(.right-message) .content {
+  background-color: #e9ecef;
+  color: black;
+  border-radius: 15px 15px 15px 0;
+}
+  /* 用户面板样式 */
+  .user-panel {
+    position: relative;
+    margin-bottom: 2px;
+    z-index: 1000;
+  }   /* 用户按钮样式 */
+
+  .user-button {
+    display: flex;                /* 使用flex布局 */
+    flex-direction: column;       /* 垂直排列 */
+    justify-content: center;      /* 垂直居中 */
+    align-items: center;          /* 水平居中 */ 
+    background: rgba(255,255,255,0.9);    /* 背景色 */
+    border: none;                 /* 无边框 */    
+    border-radius: 6px;           /* 圆角 */  
+    cursor: pointer;              /* 鼠标指针 */  
+    padding: 6px;                 /* 内边距 */  
+    width: auto;                  /* 宽度 */
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);    /* 阴影 */
+    transition: all 0.3s ease;     /* 过渡效果 */
+    gap: 4px;                     /* 子元素之间的间距 */
+  }
+
+  .user-button:hover {
+    background: rgba(245,245,245,0.95);    /* 悬停时背景色 */
+    transform: translateY(-1px);            /* 向上移动1px */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* 悬停时阴影 */
+  }
+
+  .user-icon {
+    width: 16px;
+    height: 16px;
+    fill: #007bff;
+  }
+
+  .username-display {
+    font-size: 7px;
+    margin-top: 4px;              /* 顶部间距 */
+    color: #2d3436;
+    font-weight: 500;             /* 字体粗细 */
+    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    transition: color 0.3s ease;  /* 颜色过渡 */
+  }
+
+  .user-button:hover .username-display {
+    color: #007bff;
+  }
+
+  /* 模态框样式 */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  } 
+
+  .form-group label {
+    display: block;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  .form-textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .modal-content {
+    background: #f8f9fa;
+    margin: 10vh auto;
+    padding: 32px;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+/* 模态框底部按钮容器 */
+.modal-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: auto;
+  padding: 16px 0 0;
+  justify-content: space-between;
+}
+
+/* 响应式布局调整 */
+@media (max-width: 480px) {
+  .modal-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.modal-button {
+  flex: 1;
+  max-width: 200px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+#settingsModal .modal-content {
+  padding-bottom: 24px;
+}
+
+.modal-button {
+  flex: 1;
+  max-width: 200px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 480px) {
+  .modal-actions {
+    flex-direction: column;
+  }
+  .modal-button {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+/* 添加房间信息样式 */
+.room-info {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.room-info span {
+  font-size: 14px;
+  color: #666;
+}
+
+.room-info strong {
+  color: #007bff;
+  font-weight: 600;
+}
+/* 新增容器样式：水平布局（调整对齐方式） */
+.header-container {
+  display: flex;
+  align-items: flex-start;  /* 顶部对齐，避免内容高度差异导致错位 */
+  gap: 16px;                /* 缩小元素间距 */
+  margin-bottom: 2px;
+  min-width: 480px;         /* 添加最小宽度，防止小屏幕挤压 */
+  width: 100%;              /* 设置宽度与聊天框一致 */
+}
+
+/* 调整 room-info 样式，设置宽度为 90% */
+.room-info {
+  width: 88%;
+  padding: 10px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+/* 调整 user-panel 样式，设置宽度为 10% */
+.user-panel {
+  width: 2%;
+}
+
+.user-button {
+  padding: 6px 4px;         /* 调整内边距（上下6px，左右4px） */
+  gap: 2px;                 /* 缩小图标与文字间距（原4px） */
+}
+
+.user-icon {
+  width: 20px;              /* 增大图标（原14px） */
+  height: 20px;
+}
+
+.username-display {
+  font-size: 8px;           /* 增大文字（原6px） */
+  margin-top: 0;            /* 取消顶部边距 */
+  line-height: 1.2;         /* 优化行高 */
+}
+
+.room-info span {
+  font-size: 14px;
+  color: #666;
+}
+
+.room-info strong {
+  color: #007bff;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>没有“大聪明”解决不了的问题</h1>
+    <!-- 新增容器包裹 room-info 和 user-panel -->
+    <div class="header-container">
+      <div class="room-info">
+        <span>房间名: <strong id="roomNameDisplay"></strong></span>
+        <span>房间号: <strong id="roomCodeDisplay"></strong></span>
+        <span>房间口令: <strong id="passwordDisplay"></strong></span>
+      </div>
+      <div class="user-panel">
+        <button id="settingsBtn" class="user-button">
+          <svg class="user-icon" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+          </svg>
+          <span class="username-display" id="currentUsername"></span>
+        </button>
+      </div>
+    </div>
+    <div id="chatRoom">
+      <div class="chat-box" id="chat"></div>
+      <style>
+        /* 新增样式，设置文本框高度和宽度 */
+        #messageInput {
+          height: 100px;
+          width: 99%; /* 确保宽度与聊天框一致 */
+        }
+      </style>
+      <textarea id="messageInput" placeholder="输入你的观点"></textarea>
+      <button id="sendMessage">发送</button>
+      <button id="leaveRoom">退出房间</button>
+      <h3>当前用户</h3>
+      <ul id="memberList"></ul>
+    </div>
+  </div>
+  <script>
+    // 初始化获取URL参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('roomCode');
+    const accountID = urlParams.get('accountID');
+  
+    const chatBox = document.getElementById('chat');
+    const messageInput = document.getElementById('messageInput');
+    const sendMessageButton = document.getElementById('sendMessage');
+    const leaveRoomButton = document.getElementById('leaveRoom');
+    const settingsButton = document.getElementById('settingsBtn');
+    const chatRoomDiv = document.getElementById('chatRoom');
+    const memberList = document.getElementById('memberList');
+
+    let roomName = '';
+    let roleName = '';
+    let password = '';
+    let sendID = ''; 
+   
+    // 在页面加载时调用
+    fetchRoomInfo();
+
+    // 移除加入房间的事件监听逻辑
+    // 建立WebSocket长连接（事件驱动架构核心）
+    // 功能：实时接收房间状态更新、消息推送和系统通知
+    const ws = new WebSocket('ws://localhost:3001');
+    let thinkingMessage = null;               // 思考状态消息
+    
+    // 添加错误处理
+    ws.onerror = (error) => {
+      console.error('WebSocket 连接错误:', error);
+      appendMessage('系统', '与服务器的实时连接异常，请检查网络或刷新页面');
+    };
+
+    // 添加关闭处理
+    ws.onclose = (event) => {
+      console.log('WebSocket 连接关闭，代码:', event.code, '原因:', event.reason);
+      if (event.wasClean) {
+        appendMessage('系统', '已与服务器断开连接');
+      } else {
+        appendMessage('系统', '连接意外中断，尝试重新连接...');
+        // 可添加重连逻辑（如延迟后重新创建 WebSocket）
+      }
+    };
+    ws.onmessage = (event) => {              // 处理服务器推送的消息
+      const data = JSON.parse(event.data);
+      switch(data.type) {
+        case 'ROOM_UPDATE':                  // 房间状态更新，返回room
+          // 添加调试日志，确认成员数据
+          console.log('收到ROOM_UPDATE消息，成员列表：', data.room.members);
+          updateUserList(data.room.members);     // 结构改变，重新设计更新用户列表
+          break;
+
+        case 'REPLY_MESSAGE':                  // 回复消息  
+          if (data.messageId === sendID) {
+            chatBox.removeChild(thinkingMessage);
+            if (data.reply) appendMessage('大聪明', data.reply);
+          }
+          chatBox.scrollTop = chatBox.scrollHeight;
+          break;
+
+        case 'NEW_MESSAGE':                  // 新消息推送（恢复注释）
+          appendMessage(data.user, data.message);
+          chatBox.scrollTop = chatBox.scrollHeight;
+          break;
+
+        case 'SYSTEM_MESSAGE':                // 系统通知
+          appendMessage('系统', data.message);
+          break;
+      }
+    };
+
+    ws.onopen = () => {
+      // 请求初始房间状态，后端回复'ROOM_UPDATE'+room
+      ws.send(JSON.stringify({
+        type: 'REQUEST_UPDATE',
+        roomCode: roomCode,
+        accountID: accountID           
+      }));
+
+      // 监听消息发送按钮的点击事件
+      if (sendMessageButton) {
+        sendMessageButton.addEventListener('click', () => {
+          const message = messageInput.value;
+          const messageId = crypto.randomUUID();
+          sendID = messageId;
+          messageInput.value = '';
+          // 立即显示用户消息
+          appendMessage(roleName, message);
+          // 显示思考状态
+          thinkingMessage = appendMessage('大聪明', '正在思考...', true);
+          
+          // 发送带消息ID的请求，后端回复'REPLY_MESSAGE'
+          ws.send(JSON.stringify({
+            type: 'SEND_MESSAGE',
+            roomCode: roomCode,
+            senderID: accountID,
+            message: message,
+            messageId: messageId
+          }));
+        });
+      }
+    };
+
+    // 监听输入框的回车键
+    messageInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // 阻止默认行为（如换行）
+        sendMessageButton.click(); // 触发发送按钮的点击事件
+      }
+    });
+
+    // 用户设置
+    settingsButton.addEventListener('click', () => {
+      window.location.href = `usersettings.html?roomCode=${roomCode}&accountID=${accountID}`;
+    });
+
+    // 退出房间
+    leaveRoomButton.addEventListener('click', async () => {
+      try {
+        const response = await fetch('http://localhost:3001/leave', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode, accountID }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          // 关闭 WebSocket 连接
+          ws.close();
+          window.location.href = `roomlist.html?accountID=${accountID}`;  // 跳转到房间列表
+        }
+      } catch (error) {
+        console.error('请求失败:', error);
+        alert(`网络错误：${error.message}，请检查控制台获取详细信息`);
+      }
+    });
+
+    // 显示消息
+    let lastMessageTime = null;
+
+    // 通过HTTP请求获取房间信息
+    async function fetchRoomInfo() {
+      try {
+        const response = await fetch('http://localhost:3001/room-info', {  // 修改为正确的API端点
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            roomCode: roomCode,
+            accountID: accountID
+          })
+        });
+    
+        const data = await response.json();
+        if(data.success) {
+          roomName = data.roomName;
+          password = data.password;
+          roleName = data.mymemberinfo.roleName;
+          const myhistorymessages = data.myhistorymessages;
+          
+          // 更新页面显示
+          document.getElementById('roomNameDisplay').textContent = roomName;
+          document.getElementById('roomCodeDisplay').textContent = roomCode;
+          document.getElementById('passwordDisplay').textContent = password;
+          document.getElementById('currentUsername').textContent = roleName;
+          // 显示历史消息
+          if (myhistorymessages) {
+            displayHistoryMessages(myhistorymessages);
+          }
+        } else {
+          alert(data.message);
+        }
+      } catch(error) {
+          console.error('获取房间信息失败:', error);
+          appendMessage('系统', '无法获取房间信息，请检查网络连接');
+      }
+    }
+
+    // 消息渲染函数 - 格式化显示聊天内容
+    // 参数说明：
+    // sender - 消息发送者 | message - 消息内容 | isThinking - 思考状态标识
+    function appendMessage(sender, message, isThinking = false) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender === roleName ? 'right-message' : ''}`;
+      
+      const cleanedMessage = message.replace(/^@[^：]+：/, '');
+      const timeString = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      
+      messageDiv.innerHTML = `
+      <div class="content">
+          <div class="message-header">
+              
+              <strong>${sender}</strong>
+              <span class="timestamp">${timeString}</span>
+          </div>
+          <div class="message-body">${cleanedMessage}</div>
+      </div>
+      ${isThinking ? '<div class="typing-indicator"></div>' : ''}`;
+      
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return messageDiv;
+    }
+
+    function displayHistoryMessages(messages) {
+      if (messages && messages.length > 0) {
+        messages.forEach((msg) => {
+          appendMessage(roleName, msg.message);
+          appendMessage('大聪明', msg.content);
+        });
+      }
+    }
+
+    // 更新用户列表（修复后）
+    /*  members = [{ 
+          roleID: string,       // 用户ID
+          roleName: string,     // 用户昵称
+          selfIntroduction: string, // 自我介绍
+          description: string,  // 关系描述
+          online: boolean,      // 在线状态（关键属性）
+          joinTime: string,     // 加入时间
+          lastChecked: string   // 最后检查时间
+        }]
+    */
+    function updateUserList(members) {
+      // 查找当前用户信息（添加空值保护）
+      const mymemberinfo = members.find(member => member.roleID === accountID);
+      if (mymemberinfo) {
+        document.getElementById('currentUsername').textContent = mymemberinfo.roleName;
+      }
+
+      // 渲染用户列表（参数名改为单数避免混淆）
+      memberList.innerHTML = members
+        .map(member => {  // 将参数名从 members 改为 member
+          const statusColor = member.online ? '#28a745' : '#dc3545';  // 访问当前成员的 online 属性
+          const pulseAnimation = member.online ? 'status-pulse 1.5s infinite' : 'none'; // 访问当前成员的 online 属性
+          return `
+            <li style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+              <div class="status-indicator" 
+                   style="
+                     width: 10px;
+                     height: 10px;
+                     border-radius: 50%;
+                     background: ${statusColor};
+                     animation: ${pulseAnimation};
+                   "></div>
+              ${member.roleName} (ID:${member.roleID})
+            </li>
+          `;
+        })
+        .join('');
+    }
+  </script>
+</body>
+</html>

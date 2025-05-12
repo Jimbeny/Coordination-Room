@@ -123,6 +123,9 @@
     }
   </style>
   <script>
+    // 后端 API 地址
+    const backendUrl = 'https://coordination-room.onrender.com';
+
     const MEDIATOR_INSTRUCTION = `现在我们在一个聊天室里，我是没有感情的中立admin，此外还有一些用户。`+
     `聊天室的规则是,用户与你聊天全部由我转达，这包括用户的消息与你的reply，每个用户的聊天不会被其他用户看到。`+
     `因此我们约定，我以“用户名：消息”的形式转达（如“小红：1+1=？”），以便你知道是哪个用户给你的message。`+
@@ -144,7 +147,7 @@
       const prompt = document.getElementById('prompt').value;
       
       try {
-        const response = await fetch('http://localhost:3001/create-room', {
+        const response = await fetch(`${backendUrl}/create-room`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({

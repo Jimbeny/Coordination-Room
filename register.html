@@ -61,6 +61,8 @@
     <button class="back-button" onclick="window.location.href = 'login.html'">返回登录</button>
   </div>
   <script>
+    // 后端 API 地址
+    const backendUrl = 'https://coordination-room.onrender.com';
     /**
      * 处理用户注册逻辑
      * 1. 检查两次输入的密码是否一致
@@ -79,7 +81,7 @@
       }
 
       try {
-        const response = await fetch('http://localhost:3001/register', {
+        const response = await fetch(`${backendUrl}/register`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ accountname, email, password })

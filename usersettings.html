@@ -126,6 +126,9 @@
     </div>
   </div>
   <script>
+    // 后端 API 地址
+    const backendUrl = 'https://coordination-room.onrender.com';
+
     // 初始化获取URL参数
     const urlParams = new URLSearchParams(window.location.search);
     const roomCode = urlParams.get('roomCode');
@@ -142,7 +145,7 @@
     // 新增立即执行异步函数包裹初始化逻辑
     async function initSettings() {
       try {
-        const response = await fetch('http://localhost:3001/room-info', {
+        const response = await fetch(`${backendUrl}/room-info`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -286,7 +289,7 @@
             relationshipDesc: opt.getAttribute('data-relationship-desc')
           }));
 
-          const response = await fetch('http://localhost:3001/update-settings', {
+          const response = await fetch(`${backendUrl}/update-settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ roomCode, newmemberinfo }),

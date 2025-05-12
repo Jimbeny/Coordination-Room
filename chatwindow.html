@@ -389,6 +389,9 @@
     </div>
   </div>
   <script>
+    // 后端 API 地址
+    const backendUrl = 'https://coordination-room.onrender.com';
+
     // 初始化获取URL参数
     const urlParams = new URLSearchParams(window.location.search);
     const roomCode = urlParams.get('roomCode');
@@ -413,7 +416,8 @@
     // 移除加入房间的事件监听逻辑
     // 建立WebSocket长连接（事件驱动架构核心）
     // 功能：实时接收房间状态更新、消息推送和系统通知
-    const ws = new WebSocket('ws://localhost:3001');
+    // 修改：将本地WebSocket地址改为Render部署的地址（使用wss协议）
+    const ws = new WebSocket('wss://coordination-room.onrender.com');
     let thinkingMessage = null;               // 思考状态消息
     
     // 添加错误处理
@@ -508,7 +512,7 @@
     // 退出房间
     leaveRoomButton.addEventListener('click', async () => {
       try {
-        const response = await fetch('http://localhost:3001/leave', {
+        const response = await fetch(`${backendUrl}/leave`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomCode, accountID }),
@@ -531,7 +535,7 @@
     // 通过HTTP请求获取房间信息
     async function fetchRoomInfo() {
       try {
-        const response = await fetch('http://localhost:3001/room-info', {  // 修改为正确的API端点
+        const response = await fetch(`${backendUrl}/room-info`, {  // 修改为正确的API端点
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({

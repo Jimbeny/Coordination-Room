@@ -66,11 +66,12 @@ const MessageTypes = {
 
 /* 服务实例 */
 const app = express();
-const server = app.listen(3001, () => {
-  console.log('服务器运行在 http://localhost:3001');
+// 修改：动态获取端口（Render 会通过环境变量 PORT 分配端口）
+const server = app.listen(process.env.PORT || 3001, () => {
+  console.log(`服务器运行在 http://localhost:${process.env.PORT || 3001}`);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error('端口3001被占用，请关闭其他实例或更换端口');
+    console.error(`端口 ${process.env.PORT || 3001} 被占用，请关闭其他实例或更换端口`);
     process.exit(1);
   }
 });
@@ -838,4 +839,9 @@ wss.on('connection', (ws, req) => {
       }
     }
   });
+});
+
+// 添加健康检查接口
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
 });

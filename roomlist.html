@@ -80,6 +80,8 @@
   </div>
 
   <script>
+    // 后端 API 地址
+    const backendUrl = 'https://coordination-room.onrender.com';
     // 初始化获取URL参数
     const urlParams = new URLSearchParams(window.location.search);
     const accountID = urlParams.get('accountID');
@@ -92,7 +94,7 @@
       }      
       
       try {
-        const response = await fetch(`http://localhost:3001/account/rooms?accountID=${accountID}`);
+        const response = await fetch(`${backendUrl}/account/rooms?accountID=${accountID}`);
         const data = await response.json();
         if (data.success) {
           // 标题插入用户名
@@ -127,7 +129,7 @@
      */
     async function enterRoom(roomCode, roleName, password) {
       try {
-        const response = await fetch('http://localhost:3001/join', {
+        const response = await fetch(`${backendUrl}/join`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
